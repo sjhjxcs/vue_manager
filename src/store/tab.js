@@ -1,0 +1,74 @@
+import Cookie from 'js-cookie'
+export default{
+    state:{
+        isCollapse:false,
+        tabList:[
+            {
+                path:'/',
+                name:'home',
+                label:'首页',
+                icon:'home'
+            }
+        ],
+        currentMenu:null,
+        menu:[]
+    },
+    mutations:{
+        collapseMenu(state){
+            state.isCollapse=!state.isCollapse
+        },
+        selectMenu(state,val){
+            // console.log("state和val是什么",state,val)
+            // state里面包含定义的所有数据和方法,val代表当前点击的是哪一个
+            if(val.name !== 'home'){
+                state.currentMenu = val
+                const result = state.tabList.findIndex(item=>item.name===val.name)
+                if(result===-1){
+                    state.tabList.push(val)
+                }
+            }
+            else{
+                state.currentMenu = null
+            }
+
+
+        },
+        closeTag(state,val){
+           const result =  state.tabList.findIndex(item=>item.name===val.name)
+           state.tabList.splice(result,1)
+        },
+        setMenu(state,val){
+            state.menu=val
+            Cookie.set('menu',JSON.stringify(val))
+        },
+        clearMenu(state){
+            state.menu = []
+            Cookie.remove('menu')
+        },
+        addMenu(state,router){
+            if(!Cookie.get('menu')){
+                return;
+            }
+            const menu = JSON.parse(Cookie.get('menu'))
+            state.menu = menu
+            const menuArray = []
+            menu.forEach(item => {
+                if(item.children){
+                    item.children = item.children.map(item=>{
+                        item.component = ()=>import(`../views/${item.url}`)
+                        return item
+                    })
+                    menuArray.push(...item.children)
+                }else{
+                    item.component=()=>import(`../views/${item.url}`)
+                    menuArray.push(item)
+                }
+            });
+            // 动态路由的添加
+            menuArray.forEach(item=>{
+                router.addRoute('Main',item)
+            })
+        }
+
+    }
+}
